@@ -1,29 +1,29 @@
 # tsuki (月)
 
-An interactive lunar-inspired visualization that responds to real-time music events via OSC (Open Sound Control).
+A serene night sky visualization featuring a luminous moon and twinkling stars that respond to real-time music events via OSC (Open Sound Control).
 
 ## Description
 
-"tsuki" creates a mystical moonlit scene with glowing orbs that dance and pulse in response to musical triggers. The artwork transforms sound events into ethereal visual poetry, with each drum hit, melody, or rhythmic element manifesting as luminous effects across a dark, celestial canvas.
+"tsuki" transforms your screen into a tranquil moonlit night, where a gentle moon illuminates countless stars dancing across the dark sky. Each musical event awakens different celestial elements, creating a living astronomical canvas where sound becomes starlight and rhythm becomes the pulse of the cosmos.
 
 ## Features
 
 - **OSC Integration**: Real-time response to music production software via OSC protocol
-- **Sound-Reactive Orbs**: Multiple glowing spheres that respond to different sound types
-- **Dynamic Light Effects**: Pulsing, breathing light patterns synchronized to audio
-- **Interactive Mouse Control**: Mouse position influences the central orb behavior
-- **Multi-Sound Mapping**: Different sounds (bass drum, snare, hi-hat) trigger unique visual responses
-- **Decay Animation**: Natural fade-out effects using TTL (Time To Live) values
+- **Celestial Bodies**: Realistic moon with soft glow and field of twinkling stars
+- **Astronomical Realism**: Natural celestial arrangement with stars scattered across the night sky
+- **Interactive Lunar Glow**: Mouse position enhances the moon's radiance
+- **Multi-Sound Mapping**: Different sounds trigger unique celestial responses
+- **Natural Star Behavior**: Stars twinkle at varying speeds with realistic intensity variations
 
 ## Technical Implementation
 
 - **Input**: OSC messages on port 2020 with "/dirt/play" address pattern
 - **Sound Mapping**: 
-  - Bass drum (bd, ID: 1) - Creates pulsing background effects
-  - Snare drum (sd, ID: 2) - Triggers bright flashes and orb intensity
-  - Hi-hat (hc, ID: 3) - Influences mouse orb size and glow
-- **Visual Effects**: Procedural orb generation with power-based intensity curves
-- **Color Palette**: Ethereal whites and blues against deep night sky background
+  - Bass drum (bd, ID: 1) - Increases overall star brightness and intensity
+  - Snare drum (sd, ID: 2) - Enhances constellation brightness and star prominence
+  - Hi-hat (hc, ID: 3) - Affects moon size and radiance
+- **Visual Effects**: Realistic moon rendering with distance-based glow and star twinkling algorithms
+- **Color Palette**: Warm moonlight tones and cool starlight against deep night sky
 
 ## Sound Interaction
 
@@ -36,11 +36,12 @@ The visualization listens for OSC sound events and maps them to visual elements:
 
 ## Visual Elements
 
-- **Central Orb**: Large interactive element controlled by mouse and hi-hat sounds
-- **Scattered Orbs**: 20 randomly positioned orbs that pulse with bass and snare
-- **Corner Orb**: Fixed position orb in bottom-left that responds to bass drum
-- **Background**: Deep blue nocturnal atmosphere
-- **Glow Effects**: Soft, ethereal lighting with gamma-corrected output
+- **Moon**: Luminous celestial body with realistic surface and soft glow
+- **Star Field**: 30 regular stars scattered across the night sky with natural twinkling
+- **Bright Stars**: 8 prominent stars that form constellation-like patterns
+- **Night Sky**: Deep blue to dark gradient creating atmospheric depth
+- **Interactive Glow**: Mouse-controlled lunar radiance enhancement
+- **Astronomical Positioning**: Stars positioned to avoid overlapping with the moon
 
 ## Running
 

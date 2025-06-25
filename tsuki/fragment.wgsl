@@ -39,10 +39,21 @@ fn to_linear_rgb(col: vec3<f32>) -> vec3<f32> {
     return vec3(pow(c, vec3(gamma)));
 }
 
-fn orb(p: vec2<f32>, p0: vec2<f32>, r1: f32, r2: f32, r3: f32, col: vec3<f32>) -> vec3<f32> {
-    var t = clamp(r1 - length(p - p0), 0.0, 1.0);
-    t = pow(t, sin(time.duration * 2.0) * r2 + r3);
-    return vec3(t * col);
+fn moon(p: vec2<f32>, center: vec2<f32>, radius: f32, glow: f32) -> vec3<f32> {
+    let dist = length(p - center);
+    let moon_surface = smoothstep(radius + 0.02, radius - 0.02, dist);
+    let moon_glow = exp(-dist * glow) * 0.3;
+    let moon_color = vec3(0.95, 0.95, 0.8);
+    return moon_color * (moon_surface + moon_glow);
+}
+
+fn star(p: vec2<f32>, center: vec2<f32>, intensity: f32, twinkle: f32) -> vec3<f32> {
+    let dist = length(p - center);
+    let star_core = exp(-dist * 80.0) * intensity;
+    let star_glow = exp(-dist * 20.0) * intensity * 0.3;
+    let twinkle_factor = 0.5 + 0.5 * sin(time.duration * twinkle + center.x * 100.0 + center.y * 80.0);
+    let star_color = vec3(0.9, 0.95, 1.0);
+    return star_color * (star_core + star_glow) * twinkle_factor;
 }
 
 fn rand(seed: f32) -> f32 {
@@ -59,43 +70,63 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let m = (mouse.position * 2.0 - window.resolution) / min_xy;
     let p = (in.position.xy * 2.0 - window.resolution) / min_xy;
 
-    let white = vec3(1.0, 1.0, 1.0);
-    let bg_color = vec3(0.0, 0.0, 0.12);
+    let night_sky = vec3(0.02, 0.05, 0.15);
+    
+    var star_intensity = 0.0;
+    var moon_size_boost = 0.0;
+    var constellation_brightness = 0.0;
 
-    var gain1 = 0.0;
-    var gain2 = 0.0;
-    var gain3 = 0.0;
-
-    if osc.trucks[2].sound == 1 {
-        gain1 = osc.trucks[2].gain * osc.trucks[2].ttl * 0.2;
-    }
-    if osc.trucks[2].sound == 2 {
-        gain1 = osc.trucks[2].gain * osc.trucks[2].ttl * 0.4;
-    }
-
-    if osc.trucks[5].sound == 1 {
-        gain2 = osc.trucks[5].gain * osc.trucks[5].ttl * 0.2;
-    }
-
-    if osc.trucks[3].sound == 3 {
-        gain3 = osc.trucks[3].gain * osc.trucks[3].ttl * 0.4;
+    for (var i = 0; i < 16; i++) {
+        if osc.trucks[i].sound == 1 {
+            star_intensity += osc.trucks[i].gain * osc.trucks[i].ttl * 0.3;
+        }
+        if osc.trucks[i].sound == 2 {
+            constellation_brightness += osc.trucks[i].gain * osc.trucks[i].ttl * 0.5;
+        }
+        if osc.trucks[i].sound == 3 {
+            moon_size_boost += osc.trucks[i].gain * osc.trucks[i].ttl * 0.2;
+        }
     }
 
-    var t = bg_color;
-    t += orb(m, p, 1.05 + gain3, 0.0, 20.0, white);
+    var scene = night_sky;
+    
+    let moon_pos = vec2(-0.6, -0.6);
+    let moon_radius = 0.15 + moon_size_boost * 0.1;
+    let moon_glow = 3.0 + moon_size_boost * 2.0;
+    scene += moon(p, moon_pos, moon_radius, moon_glow);
 
-    for (var i = 0; i < 20; i++) {
-        var pos = rand_position(f32(i));
-        if pos.x < -0.7 { pos.x += 0.3; }
-        if pos.y < -0.7 { pos.y += 0.3; }
+    let mouse_influence = length(p - m) * 0.5;
+    let moon_mouse_glow = exp(-mouse_influence * 2.0) * 0.1;
+    scene += vec3(0.9, 0.9, 0.7) * moon_mouse_glow;
 
-        let r = rand(f32(i + 1)) + 0.1;
-        let g = rand(f32(i + 2)) + 0.1;
-        let b = rand(f32(i + 3)) + 0.1;
-        t += orb(pos, p, 1.0 + gain1, 3.0, 15.0, vec3(r, g, b));
+    for (var i = 0; i < 30; i++) {
+        var star_pos = rand_position(f32(i) * 2.5);
+        star_pos.x = star_pos.x * 1.8 - 0.4;
+        star_pos.y = star_pos.y * 1.8 - 0.4;
+        
+        if length(star_pos - moon_pos) > 0.25 {
+            let base_intensity = 0.3 + rand(f32(i) * 3.7) * 0.4;
+            let sound_boost = star_intensity * (0.5 + rand(f32(i) * 4.2) * 0.5);
+            let constellation_boost = constellation_brightness * (0.3 + rand(f32(i) * 5.1) * 0.7);
+            let total_intensity = base_intensity + sound_boost + constellation_boost;
+            
+            let twinkle_speed = 2.0 + rand(f32(i) * 6.3) * 3.0;
+            scene += star(p, star_pos, total_intensity, twinkle_speed);
+        }
     }
 
-    t += orb(vec2(-0.9, -0.9), p, 1.3 + gain2, 0.0, 8.0, vec3(1.0, 1.0, 0.3));
+    for (var i = 0; i < 8; i++) {
+        let bright_star_pos = vec2(
+            rand(f32(i) * 7.8) * 1.6 - 0.8,
+            rand(f32(i) * 8.9) * 1.6 - 0.8
+        );
+        
+        if length(bright_star_pos - moon_pos) > 0.3 {
+            let bright_intensity = 0.8 + constellation_brightness * 1.5;
+            let bright_twinkle = 1.5 + constellation_brightness * 2.0;
+            scene += star(p, bright_star_pos, bright_intensity, bright_twinkle);
+        }
+    }
 
-    return vec4(to_linear_rgb(t), 1.0);
+    return vec4(to_linear_rgb(scene), 1.0);
 }

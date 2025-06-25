@@ -177,7 +177,7 @@ fn orb(pos: vec2<f32>, r: f32, blur: f32) -> f32 {
 cargo install kchfgt
 
 # Run shader art
-kchfgt run work_name/work_name.toml
+kchfgt work_name/work_name.toml
 ```
 
 ## Works in This Repository

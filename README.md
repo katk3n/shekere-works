@@ -180,7 +180,3 @@ cargo install kchfgt
 kchfgt work_name/work_name.toml
 ```
 
-## Works in This Repository
-
-- **tsuki**: OSC-based interactive visuals responding to real-time music events
-- **yohuke**: Spectrum analysis-driven visualization with frequency-responsive effects

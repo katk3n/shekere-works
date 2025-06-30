@@ -1,49 +1,4 @@
-struct WindowUniform {
-    // window size in physical size
-    resolution: vec2<f32>,
-}
 
-struct TimeUniform {
-    // time elapsed since the program started
-    duration: f32,
-}
-
-struct MouseUniform {
-    // mouse position in physical size
-    position: vec2<f32>,
-}
-
-struct SpectrumDataPoint {
-    frequency: f32,
-    amplitude: f32,
-    _padding: vec2<u32>,
-}
-
-struct SpectrumUniform {
-    // spectrum data points of audio input
-    data_points: array<SpectrumDataPoint, 2048>,
-    // the number of data points
-    num_points: u32,
-    // frequency of the data point with the max amplitude
-    max_frequency: f32,
-    // max amplitude of audio input
-    max_amplitude: f32,
-}
-
-@group(0) @binding(0) var<uniform> window: WindowUniform;
-@group(0) @binding(1) var<uniform> time: TimeUniform;
-@group(1) @binding(0) var<uniform> mouse: MouseUniform;
-@group(2) @binding(1) var<uniform> spectrum: SpectrumUniform;
-
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-}
-
-fn to_linear_rgb(col: vec3<f32>) -> vec3<f32> {
-    let gamma = 2.2;
-    let c = clamp(col, vec3(0.0), vec3(1.0));
-    return vec3(pow(c, vec3(gamma)));
-}
 
 const RADIUS: f32 = 0.2;
 const SMOOTH_BORDER: f32 = 0.01;
@@ -72,25 +27,24 @@ fn orb(pos: vec2<f32>, r: f32, blur: f32) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let min_xy = min(window.resolution.x, window.resolution.y);
-    let uv = vec2(in.position.x / min_xy, 1.0 - in.position.y / min_xy);
+    let uv = NormalizedCoords(vec2(in.position.x, Window.resolution.y - in.position.y));
 
-    let ratio = window.resolution.xy / window.resolution.y;
+    let ratio = Window.resolution.xy / Window.resolution.y;
 
     var col = 0.0;
     for (var i = 0u; i < NUM_CIRCLES; i++) {
         let time_shift = 2.0 * f32(i);
-        let time = time.duration + time_shift;
+        let time = Time.duration + time_shift;
         let shift = generate_random_shift(2.0 * f32(i), f32(i + 56u), time, ratio);
-        let spectrum_index = i % spectrum.num_points;
-        let freq_ratio = spectrum.data_points[spectrum_index].frequency * 0.001;
-        let radius = clamp(freq_ratio * spectrum.data_points[spectrum_index].amplitude, 0.0, 0.1);
+        let spectrum_index = i % Spectrum.num_points;
+        let freq_ratio = Spectrum.data_points[spectrum_index].frequency * 0.001;
+        let radius = clamp(freq_ratio * Spectrum.data_points[spectrum_index].amplitude, 0.0, 0.1);
         col += orb(uv - shift, radius, SMOOTH_BORDER) * (1.0 - sin_wave01(time));
     }
 
-    let sin_col = 0.5 + 0.5 * cos(time.duration + vec3(uv.x, uv.y, uv.x) + vec3(0.0, 2.0, 4.0));
+    let sin_col = 0.5 + 0.5 * cos(Time.duration + vec3(uv.x, uv.y, uv.x) + vec3(0.0, 2.0, 4.0));
     let bg_col = vec3(0.0, 0.1, 0.2);
     let final_col = bg_col + sin_col * (clamp(col, 0.0, 1.0));
 
-    return vec4(to_linear_rgb(final_col), 1.0);
+    return vec4(ToLinearRgb(final_col), 1.0);
 }

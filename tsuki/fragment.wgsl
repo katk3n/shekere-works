@@ -1,43 +1,4 @@
-struct WindowUniform {
-    // window size in physical size
-    resolution: vec2<f32>,
-};
 
-struct TimeUniform {
-    // time elapsed since the program started
-    duration: f32,
-};
-
-struct MouseUniform {
-    // mouse position in physical size
-    position: vec2<f32>,
-};
-
-struct OscTruck {
-    sound: i32,
-    ttl: f32,
-    note: f32,
-    gain: f32,
-}
-
-struct OscUniform {
-    trucks: array<OscTruck, 16>,
-};
-
-@group(0) @binding(0) var<uniform> window: WindowUniform;
-@group(0) @binding(1) var<uniform> time: TimeUniform;
-@group(1) @binding(0) var<uniform> mouse: MouseUniform;
-@group(2) @binding(0) var<uniform> osc: OscUniform;
-
-struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-};
-
-fn to_linear_rgb(col: vec3<f32>) -> vec3<f32> {
-    let gamma = 2.2;
-    let c = clamp(col, vec3(0.0), vec3(1.0));
-    return vec3(pow(c, vec3(gamma)));
-}
 
 fn moon(p: vec2<f32>, center: vec2<f32>, radius: f32, glow: f32) -> vec3<f32> {
     let dist = length(p - center);
@@ -51,7 +12,7 @@ fn star(p: vec2<f32>, center: vec2<f32>, intensity: f32, twinkle: f32) -> vec3<f
     let dist = length(p - center);
     let star_core = exp(-dist * 80.0) * intensity;
     let star_glow = exp(-dist * 20.0) * intensity * 0.3;
-    let twinkle_factor = 0.5 + 0.5 * sin(time.duration * twinkle + center.x * 100.0 + center.y * 80.0);
+    let twinkle_factor = 0.5 + 0.5 * sin(Time.duration * twinkle + center.x * 100.0 + center.y * 80.0);
     let star_color = vec3(0.9, 0.95, 1.0);
     return star_color * (star_core + star_glow) * twinkle_factor;
 }
@@ -66,9 +27,8 @@ fn rand_position(x: f32) -> vec2<f32> {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let min_xy = min(window.resolution.x, window.resolution.y);
-    let m = (mouse.position * 2.0 - window.resolution) / min_xy;
-    let p = (in.position.xy * 2.0 - window.resolution) / min_xy;
+    let m = MouseCoords();
+    let p = NormalizedCoords(in.position.xy);
 
     let night_sky = vec3(0.02, 0.05, 0.15);
     
@@ -77,14 +37,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var constellation_brightness = 0.0;
 
     for (var i = 0; i < 16; i++) {
-        if osc.trucks[i].sound == 1 {
-            star_intensity += osc.trucks[i].gain * osc.trucks[i].ttl * 0.3;
+        if Osc.trucks[i].sound == 1 {
+            star_intensity += Osc.trucks[i].gain * Osc.trucks[i].ttl * 0.3;
         }
-        if osc.trucks[i].sound == 2 {
-            constellation_brightness += osc.trucks[i].gain * osc.trucks[i].ttl * 0.5;
+        if Osc.trucks[i].sound == 2 {
+            constellation_brightness += Osc.trucks[i].gain * Osc.trucks[i].ttl * 0.5;
         }
-        if osc.trucks[i].sound == 3 {
-            moon_size_boost += osc.trucks[i].gain * osc.trucks[i].ttl * 0.2;
+        if Osc.trucks[i].sound == 3 {
+            moon_size_boost += Osc.trucks[i].gain * Osc.trucks[i].ttl * 0.2;
         }
     }
 
@@ -128,5 +88,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         }
     }
 
-    return vec4(to_linear_rgb(scene), 1.0);
+    return vec4(ToLinearRgb(scene), 1.0);
 }

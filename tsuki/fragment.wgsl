@@ -36,15 +36,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var moon_size_boost = 0.0;
     var constellation_brightness = 0.0;
 
-    for (var i = 0; i < 16; i++) {
-        if Osc.trucks[i].sound == 1 {
-            star_intensity += Osc.trucks[i].gain * Osc.trucks[i].ttl * 0.3;
+    for (var i = 0u; i < 16u; i++) {
+        if OscSound(i) == 1 {
+            star_intensity += OscGain(i) * OscTtl(i) * 0.3;
         }
-        if Osc.trucks[i].sound == 2 {
-            constellation_brightness += Osc.trucks[i].gain * Osc.trucks[i].ttl * 0.5;
+        if OscSound(i) == 2 {
+            constellation_brightness += OscGain(i) * OscTtl(i) * 0.5;
         }
-        if Osc.trucks[i].sound == 3 {
-            moon_size_boost += Osc.trucks[i].gain * Osc.trucks[i].ttl * 0.2;
+        if OscSound(i) == 3 {
+            moon_size_boost += OscGain(i) * OscTtl(i) * 0.2;
         }
     }
 

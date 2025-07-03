@@ -37,8 +37,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let time = Time.duration + time_shift;
         let shift = generate_random_shift(2.0 * f32(i), f32(i + 56u), time, ratio);
         let spectrum_index = i % Spectrum.num_points;
-        let freq_ratio = Spectrum.data_points[spectrum_index].frequency * 0.001;
-        let radius = clamp(freq_ratio * Spectrum.data_points[spectrum_index].amplitude, 0.0, 0.1);
+        let freq_ratio = SpectrumFrequency(spectrum_index) * 0.001;
+        let radius = clamp(freq_ratio * SpectrumAmplitude(spectrum_index), 0.0, 0.1);
         col += orb(uv - shift, radius, SMOOTH_BORDER) * (1.0 - sin_wave01(time));
     }
 

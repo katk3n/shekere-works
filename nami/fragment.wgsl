@@ -45,9 +45,9 @@ fn get_audio_intensity() -> f32 {
     let sample_count = min(Spectrum.num_points, 64u);
     
     for (var i = 0u; i < sample_count; i++) {
-        let freq_ratio = Spectrum.data_points[i].frequency / Spectrum.max_frequency;
+        let freq_ratio = SpectrumFrequency(i) / Spectrum.max_frequency;
         let weight = 1.0 - freq_ratio * 0.5;
-        intensity += Spectrum.data_points[i].amplitude * weight;
+        intensity += SpectrumAmplitude(i) * weight;
     }
     
     return clamp(intensity / f32(sample_count), 0.0, 1.0);

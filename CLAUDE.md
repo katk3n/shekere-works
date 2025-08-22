@@ -49,6 +49,7 @@ For detailed implementation and usage examples, refer to: https://github.com/kat
 
 ### MIDI Helpers (when MIDI is configured)
 - `MidiNote(note_num: u32) -> f32` - Returns MIDI note velocity (0.0-1.0)
+- `MidiNoteOn(note_num: u32) -> f32` - Returns MIDI note on attack detection (0.0-1.0)
 - `MidiControl(cc_num: u32) -> f32` - Returns MIDI control change value (0.0-1.0)
 
 ### Available Uniforms (PascalCase)
@@ -68,6 +69,32 @@ When modifying shaders:
 - Apply `ToLinearRgb()` for gamma correction on final output
 - Use PascalCase for uniform variables (Window, Time, Mouse, etc.)
 - Follow the existing pattern for mouse and time-based animations
+
+### WGSL Constraints and Best Practices
+
+**Array Indexing Restrictions:**
+- **CRITICAL**: Array indices in WGSL must be constant expressions or compile-time constants
+- **AVOID**: Dynamic array indexing like `array[variable_index]` - this will cause compilation errors
+- **USE INSTEAD**: Direct loops over known ranges or constant indices only
+
+```wgsl
+// ❌ WRONG - Dynamic indexing will fail
+var my_array: array<f32, 10>;
+for (var i = 0; i < count; i++) {
+    let value = my_array[i]; // ERROR: i is not constant
+}
+
+// ✅ CORRECT - Direct iteration over known ranges
+for (var note = MIN_NOTE; note <= MAX_NOTE; note++) {
+    let velocity = MidiNote(note); // note is constant in each iteration
+    // Process each note directly without array storage
+}
+```
+
+**Multipass Rendering:**
+- Use separate shader files for each pass (e.g., `scene.wgsl`, `afterimage.wgsl`)
+- Configure multiple `[[pipeline]]` sections in TOML
+- Access previous pass with `SamplePreviousPass(uv)` function
 
 ## Hot Reload Configuration
 

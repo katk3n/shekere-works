@@ -1,0 +1,3 @@
+[submodule "external/shekere"]
+	path = external/shekere
+	url = https://github.com/katk3n/shekere.git

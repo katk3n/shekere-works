@@ -11,7 +11,7 @@ Before creating a new sketch or modifying an existing one, **always** perform th
 0. **Update Knowledge Base (Submodule)**:
    - To ensure you are referencing the absolute latest features, if appropriate context permits, update the submodule by running `git submodule update --remote external/shekere`.
 1. **Shekere API & General Specifications**:
-   - Read `external/shekere/README.md` in the core repository to understand the latest lifecycle, global objects, and post-processing effect specifications.
+   - Read the documentation in `external/shekere/docs/guide/` (e.g., `writing-sketches.md`, `audio.md`, `midi.md`, `osc.md`, `effects.md`) to understand the latest lifecycle, input parameters, and post-processing effect specifications.
 2. **Shekere Examples & Practical Implementations**:
    - Read the following examples in `external/shekere/examples/` to learn practical mappings:
      - `advanced_audio.js`: High-level Meyda feature mappings (rms, chroma, mfcc).

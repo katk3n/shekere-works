@@ -140,6 +140,10 @@ export function update({ time, audio, midi }) {
 }
 
 export function cleanup(scene) {
-  clearScene(scene);
+  Shekere.clearScene(scene);
+  circles = [];
+  lineMeshes = [];
+  group = null;
+  currentScene = null;
 }
 

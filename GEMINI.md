@@ -31,8 +31,8 @@ When creating or editing a sketch, **you must read and adhere to the following s
 shekere-works/
 ├── GEMINI.md          # This file (Basic Guide for AI Agents)
 ├── .agents/           # Directory for detailed AI skills (instruction sheets)
-├── sketch_01.js
-└── sketch_02.js
+├── visualization_01.js
+└── animation_02.js
 ```
 
 > Works are primarily managed in the format: 1 file = 1 sketch.
@@ -43,10 +43,10 @@ shekere-works/
 
 To streamline the creative process for the user, **always operate under the following default behavior**:
 
-- If the user provides a brief visual concept, feeling, keywords, or a mood (e.g., "Cyberpunk neon", "A calm ocean", "Aggressive techno visuals"), **implicitly understand this as a request to create a new sketch**.
+- If the user provides a brief visual concept, feeling, keywords, or a mood (e.g., "Cyberpunk neon", "A ocean", "Aggressive visuals"), **implicitly understand this as a request to create a new sketch**.
 - The user does **NOT** need to explicitly say "Please write code for a sketch."
 - When given a concept, you must autonomously:
   1. **Brainstorm**: Quickly decide how the concept maps to Shekere's capabilities (e.g., mapping high `rms` to `bloom`, `chroma` to colors, etc.).
-  2. **Name**: Devise a descriptive filename (e.g., `sketch_cyberpunk_neon.js`).
+  2. **Name**: Devise a descriptive filename (e.g., `cyberpunk_neon.js`).
   3. **Execute**: Follow the `create-sketch` instructions to generate the code and save the file directly.
   4. **Present**: Let the user know the file is ready to be loaded into the Shekere Visualizer.

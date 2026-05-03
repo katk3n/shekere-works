@@ -2,29 +2,6 @@
  * Features drifting particles (marine snow) and an organic central entity.
  */
 
-const vertexShader = `
-  attribute float size;
-  attribute vec3 customColor;
-  varying vec3 vColor;
-  void main() {
-    vColor = customColor;
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    // Distance-based size calculation
-    gl_PointSize = size * (200.0 / -mvPosition.z);
-    gl_Position = projectionMatrix * mvPosition;
-  }
-`;
-
-const fragmentShader = `
-  varying vec3 vColor;
-  void main() {
-    float d = distance(gl_PointCoord, vec2(0.5));
-    float strength = exp(-d * 8.0);
-    strength *= (1.0 - smoothstep(0.4, 0.5, d));
-    gl_FragColor = vec4(vColor, strength);
-  }
-`;
-
 export function setup(scene) {
   // --- 1. Scene Setup ---
   this.group = new THREE.Group();
@@ -45,9 +22,6 @@ export function setup(scene) {
     c.setHSL(i / 12.0, 1.0, 0.5); // Full color wheel for chroma
     this.chromaColors.push(c);
   }
-
-  // Base particle color
-  const baseColor = new THREE.Color(0x224488);
 
   for (let i = 0; i < particleCount; i++) {
     // Spread particles in a wide area
@@ -74,20 +48,40 @@ export function setup(scene) {
     this.velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
   }
 
-  const particleGeo = new THREE.BufferGeometry();
-  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  particleGeo.setAttribute('customColor', new THREE.BufferAttribute(colors, 3));
-  particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  // Use PlaneGeometry for TSL InstancedMesh instead of BufferGeometry points
+  const particleGeo = new THREE.PlaneGeometry(1, 1);
+  particleGeo.setAttribute('instanceOffset', new THREE.InstancedBufferAttribute(positions, 3));
+  particleGeo.setAttribute('customColor', new THREE.InstancedBufferAttribute(colors, 3));
+  particleGeo.setAttribute('size', new THREE.InstancedBufferAttribute(sizes, 1));
 
-  const particleMat = new THREE.ShaderMaterial({
-    vertexShader,
-    fragmentShader,
+  const particleMat = new THREE.MeshBasicNodeMaterial({
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     transparent: true
   });
 
-  this.particles = new THREE.Points(particleGeo, particleMat);
+  const instanceOffset = TSL.attribute('instanceOffset', 'vec3');
+  const sizeAttribute = TSL.attribute('size', 'float');
+  const customColorAttribute = TSL.attribute('customColor', 'vec3');
+
+  // Billboarding
+  const viewOffset = TSL.cameraViewMatrix.mul(TSL.modelWorldMatrix).mul(TSL.vec4(instanceOffset, 1.0));
+  const scaledLocal = TSL.positionLocal.xy.mul(sizeAttribute);
+  const finalViewPos = viewOffset.add(TSL.vec4(scaledLocal, 0.0, 0.0));
+  particleMat.vertexNode = TSL.cameraProjectionMatrix.mul(finalViewPos);
+
+  const getOpacity = TSL.Fn(() => {
+    const d = TSL.distance(TSL.uv(), TSL.vec2(0.5));
+    let strength = TSL.exp(d.mul(-8.0));
+    strength = strength.mul(TSL.sub(1.0, TSL.smoothstep(0.4, 0.5, d)));
+    return strength;
+  });
+
+  particleMat.colorNode = customColorAttribute;
+  particleMat.opacityNode = getOpacity();
+
+  this.particles = new THREE.InstancedMesh(particleGeo, particleMat, particleCount);
+  this.particles.frustumCulled = false;
   this.group.add(this.particles);
 
   // --- 3. Central Entity (The "Jellyfish") ---
@@ -191,7 +185,7 @@ export function update({ time, audio, bloom, vignette }) {
   }
 
   // --- 1. Particles Movement & Chroma Reactivity ---
-  const positions = this.particles.geometry.attributes.position.array;
+  const positions = this.particles.geometry.attributes.instanceOffset.array;
   const colors = this.particles.geometry.attributes.customColor.array;
   const sizes = this.particles.geometry.attributes.size.array;
   
@@ -235,7 +229,7 @@ export function update({ time, audio, bloom, vignette }) {
     const sizeDecaySpeed = (targetSize < sizes[i]) ? 0.4 : 0.15;
     sizes[i] = THREE.MathUtils.lerp(sizes[i], targetSize, sizeDecaySpeed);
   }
-  this.particles.geometry.attributes.position.needsUpdate = true;
+  this.particles.geometry.attributes.instanceOffset.needsUpdate = true;
   this.particles.geometry.attributes.customColor.needsUpdate = true;
   this.particles.geometry.attributes.size.needsUpdate = true;
 

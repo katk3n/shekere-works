@@ -7,42 +7,8 @@
  * - No wireframes, no wave planes.
  */
 
-// --- Shader Definitions ---
-const vertexShader = `
-    varying vec3 vNormal;
-    varying vec3 vPosition;
-    void main() {
-        vNormal = normalize(normalMatrix * normal);
-        vPosition = position;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-`;
-
-const fragmentShader = `
-    uniform vec3 color;
-    uniform float intensity;
-    uniform float time;
-    varying vec3 vNormal;
-    varying vec3 vPosition;
-    void main() {
-        // Softer Fresnel glow (vague/foggy)
-        float dotNL = abs(dot(vNormal, vec3(0, 0, 1.0)));
-        float glow = pow(1.0 - dotNL, 1.0); // Linear falloff for maximum "softness"
-        
-        // Gentler pulse
-        float pulse = 0.85 + 0.15 * sin(time * 2.5);
-        
-        // Reduced core density
-        float core = pow(dotNL, 5.0) * 0.15;
-        
-        // Milky, ethereal color blend
-        vec3 finalColor = color * (glow + core + 0.2) * (intensity + 0.3) * pulse;
-        gl_FragColor = vec4(finalColor, (glow + 0.1) * min(intensity, 1.0));
-    }
-`;
-
 // --- Global State ---
-let centralOrb, glowRing, particles, particleTexture;
+let centralOrb, glowRing, particles;
 let satelliteOrbs = [];
 let satelliteStates = []; // Individual brightness/scale for 13 orbs
 
@@ -57,41 +23,52 @@ const SATELLITE_COUNT = 13;
 const INNER_RING_COUNT = 6;
 const OUTER_RING_COUNT = 7;
 
-// Helper to create a round particle texture
-function createCircleTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.4)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 64, 64);
-    const texture = new THREE.CanvasTexture(canvas);
-    return texture;
-}
-
 export function setup(scene) {
+    // --- TSL Functions ---
+    const getGlow = TSL.Fn(([colorNode, intensityNode, timeNode]) => {
+        // Soft Fresnel glow
+        const dotNL = TSL.abs(TSL.dot(TSL.normalView, TSL.vec3(0, 0, 1.0)));
+        const glow = TSL.sub(1.0, dotNL);
+        
+        // Gentler pulse
+        const pulse = TSL.add(0.85, TSL.mul(0.15, TSL.sin(TSL.mul(timeNode, 2.5))));
+        
+        // Reduced core density
+        const core = TSL.mul(TSL.pow(dotNL, 5.0), 0.15);
+        
+        // finalColor = color * (glow + core + 0.2) * (intensity + 0.3) * pulse;
+        const glowFactor = TSL.add(glow, core, 0.2);
+        const intensityFactor = TSL.add(intensityNode, 0.3);
+        const finalColor = TSL.mul(colorNode, glowFactor, intensityFactor, pulse);
+        
+        // gl_FragColor.a = (glow + 0.1) * min(intensity, 1.0);
+        const finalAlpha = TSL.mul(TSL.add(glow, 0.1), TSL.min(intensityNode, 1.0));
+        
+        return TSL.vec4(finalColor, finalAlpha);
+    });
+
     // 1. Central Orb (Shader)
     const orbGeo = new THREE.SphereGeometry(1.2, 64, 64);
-    const orbMat = new THREE.ShaderMaterial({
-        uniforms: {
-            color: { value: new THREE.Color(0xffaa00) },
-            intensity: { value: 1.0 },
-            time: { value: 0.0 }
-        },
-        vertexShader,
-        fragmentShader,
+    
+    const centralColorNode = TSL.uniform(new THREE.Color(0xffaa00));
+    const centralIntensityNode = TSL.uniform(1.0);
+    const centralTimeNode = TSL.uniform(0.0);
+
+    const orbMat = new THREE.MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });
+    const centralGlowColor = getGlow([centralColorNode, centralIntensityNode, centralTimeNode]);
+    orbMat.colorNode = centralGlowColor.rgb;
+    orbMat.opacityNode = centralGlowColor.a;
+
     centralOrb = new THREE.Mesh(orbGeo, orbMat);
+    centralOrb.userData = { colorNode: centralColorNode, intensityNode: centralIntensityNode, timeNode: centralTimeNode };
     scene.add(centralOrb);
 
     // 2. Satellite Orbs (13)
+    const satGeo = new THREE.SphereGeometry(0.25, 32, 32);
     for (let i = 0; i < SATELLITE_COUNT; i++) {
         const isInner = i < INNER_RING_COUNT;
         const radius = isInner ? 2.5 : 4.2;
@@ -99,21 +76,21 @@ export function setup(scene) {
             ? (i / INNER_RING_COUNT) * Math.PI * 2
             : ((i - INNER_RING_COUNT) / OUTER_RING_COUNT) * Math.PI * 2;
 
-        const satGeo = new THREE.SphereGeometry(0.25, 32, 32);
-        const satMat = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: new THREE.Color().setHSL(i / SATELLITE_COUNT, 0.8, 0.5) },
-                intensity: { value: 0.0 },
-                time: { value: Math.random() * 10 }
-            },
-            vertexShader,
-            fragmentShader,
+        const satColorNode = TSL.uniform(new THREE.Color().setHSL(i / SATELLITE_COUNT, 0.8, 0.5));
+        const satIntensityNode = TSL.uniform(0.0);
+        const satTimeNode = TSL.uniform(Math.random() * 10);
+
+        const satMat = new THREE.MeshBasicNodeMaterial({
             transparent: true,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
+        const satGlowColor = getGlow([satColorNode, satIntensityNode, satTimeNode]);
+        satMat.colorNode = satGlowColor.rgb;
+        satMat.opacityNode = satGlowColor.a;
 
         const satMesh = new THREE.Mesh(satGeo, satMat);
+        satMesh.userData = { colorNode: satColorNode, intensityNode: satIntensityNode, timeNode: satTimeNode };
         satMesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
         scene.add(satMesh);
 
@@ -122,24 +99,36 @@ export function setup(scene) {
     }
 
     // 3. Ambient Particles (Round)
-    particleTexture = createCircleTexture();
     const partCount = 500;
-    const partGeo = new THREE.BufferGeometry();
+    const partGeo = new THREE.PlaneGeometry(0.2, 0.2);
     const posArray = new Float32Array(partCount * 3);
     for (let i = 0; i < partCount * 3; i++) {
         posArray[i] = (Math.random() - 0.5) * 25;
     }
-    partGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const partMat = new THREE.PointsMaterial({
+    partGeo.setAttribute('instanceOffset', new THREE.InstancedBufferAttribute(posArray, 3));
+    
+    const partMat = new THREE.MeshBasicNodeMaterial({
         color: 0xffeeaa,
-        size: 0.2,
-        map: particleTexture,
         transparent: true,
-        opacity: 0.5,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });
-    particles = new THREE.Points(partGeo, partMat);
+
+    const instanceOffset = TSL.attribute('instanceOffset', 'vec3');
+    const viewOffset = TSL.cameraViewMatrix.mul(TSL.modelWorldMatrix).mul(TSL.vec4(instanceOffset, 1.0));
+    const finalViewPos = viewOffset.add(TSL.vec4(TSL.positionLocal.xy, 0.0, 0.0));
+    partMat.vertexNode = TSL.cameraProjectionMatrix.mul(finalViewPos);
+
+    const getSoftCircle = TSL.Fn(() => {
+        const d = TSL.distance(TSL.uv(), TSL.vec2(0.5));
+        return TSL.smoothstep(0.5, 0.2, d);
+    });
+    
+    // Opacity 0.5 combined with soft circle mask
+    partMat.opacityNode = TSL.mul(getSoftCircle(), 0.5);
+
+    particles = new THREE.InstancedMesh(partGeo, partMat, partCount);
+    particles.frustumCulled = false;
     scene.add(particles);
 
     // 4. Glow Ring
@@ -173,12 +162,12 @@ export function update(context) {
     centralOrb.scale.set(scale, scale, scale);
 
     // Shader uniforms
-    centralOrb.material.uniforms.time.value = time;
-    centralOrb.material.uniforms.intensity.value = 1.0 + smoothedVolume * 4.0;
+    centralOrb.userData.timeNode.value = time;
+    centralOrb.userData.intensityNode.value = 1.0 + smoothedVolume * 4.0;
 
     // Color transition orange -> cyan based on mid energy
     const hue = 0.08 + smoothedMid * 0.45;
-    centralOrb.material.uniforms.color.value.setHSL(hue, 0.9, 0.5);
+    centralOrb.userData.colorNode.value.setHSL(hue, 0.9, 0.5);
 
     // --- Satellite Orbs Update ---
     // Handpan energy is mostly in the lower-mid range, but we expand to capture harmonics.
@@ -210,8 +199,8 @@ export function update(context) {
         sat.mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, Math.sin(time * 0.5 + i) * 0.5);
 
         // Shader updates
-        sat.mesh.material.uniforms.time.value = time + i;
-        sat.mesh.material.uniforms.intensity.value = 0.3 + satelliteStates[i] * 6.0;
+        sat.mesh.userData.timeNode.value = time + i;
+        sat.mesh.userData.intensityNode.value = 0.3 + satelliteStates[i] * 6.0;
     }
 
     // --- Ambient Updates ---
@@ -220,13 +209,13 @@ export function update(context) {
     glowRing.rotation.z = time * 0.1;
 
     particles.rotation.y = time * 0.02;
-    const pPos = particles.geometry.attributes.position.array;
+    const pPos = particles.geometry.attributes.instanceOffset.array;
     for (let i = 0; i < pPos.length; i++) {
         pPos[i] += (Math.random() - 0.5) * smoothedHigh * 0.03;
     }
-    particles.geometry.attributes.position.needsUpdate = true;
+    particles.geometry.attributes.instanceOffset.needsUpdate = true;
 }
 
 export function cleanup(scene) {
-    clearScene(scene);
+    Shekere.clearScene(scene);
 }

@@ -6,7 +6,7 @@ Use this file as the primary project guidance for AI agents. `GEMINI.md` may exi
 
 ## Project Shape
 
-- `sketches/*.js` files are Shekere sketches. Treat one file as one complete work.
+- `sketches/**/*.js` files are Shekere sketches. Treat one file as one complete work.
 - `assets/` contains local media for sketches.
 - `.agents/skills/` contains reusable agent skills. `SKILL.md` is the primary source for each skill, and `instructions.md` may exist as a compatibility symlink.
 - `external/shekere/` is the Shekere application source and documentation submodule.

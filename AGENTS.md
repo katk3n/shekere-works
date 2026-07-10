@@ -26,6 +26,15 @@ For a new sketch:
 
 If the sketch uses Three.js Shading Language (TSL), also read `.agents/skills/write-tsl/SKILL.md` before editing.
 
+## Mobile Preview Mode
+
+When the user wants to inspect a work without the Shekere app, read `.agents/skills/shekere-preview-sketch/SKILL.md`.
+
+- Create self-contained, touch-friendly HTML previews under `previews/<sketch_name>/`.
+- Use `index.html` for the current or selected direction; place alternative directions in the same directory with descriptive filenames.
+- Treat previews as approximate visual studies, not an exact Shekere runtime.
+- `previews/` is Git-ignored. Do not commit preview artifacts unless the user requests it.
+
 ## Shekere Sketch Rules
 
 - Do not import `THREE` or `TSL`; Shekere exposes them globally.

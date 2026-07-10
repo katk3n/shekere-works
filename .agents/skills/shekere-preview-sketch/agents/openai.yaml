@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shekere Preview Sketch"
+  short_description: "Generate local touch-ready visual preview HTML"
+  default_prompt: "Use $shekere-preview-sketch to create local mobile previews for several visual directions of this Shekere work."

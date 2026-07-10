@@ -6,7 +6,7 @@ Use this file as the primary project guidance for AI agents. `GEMINI.md` may exi
 
 ## Project Shape
 
-- Root `*.js` files are Shekere sketches. Treat one file as one complete work.
+- `sketches/*.js` files are Shekere sketches. Treat one file as one complete work.
 - `assets/` contains local media for sketches.
 - `.agents/skills/` contains reusable agent skills. `SKILL.md` is the primary source for each skill, and `instructions.md` may exist as a compatibility symlink.
 - `external/shekere/` is the Shekere application source and documentation submodule.
@@ -20,7 +20,7 @@ For a new sketch:
 1. Read `.agents/skills/create-sketch/SKILL.md`.
 2. Read the relevant Shekere docs under `external/shekere/docs/guide/`, especially `writing-sketches.md`, `audio.md`, and `effects.md`.
 3. Skim relevant examples under `external/shekere/examples/` for the requested interaction style.
-4. Choose a descriptive snake_case filename at the repository root.
+4. Choose a descriptive snake_case filename in the `sketches/` directory.
 5. Write one self-contained `.js` sketch that exports `setup(scene)`, `update(context)`, and `cleanup(scene)`.
 6. Tell the user which file is ready to load in the Shekere Visualizer.
 
